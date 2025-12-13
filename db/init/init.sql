@@ -6,11 +6,13 @@ CREATE TABLE studios (
 CREATE TABLE anime (
   anime_id SERIAL PRIMARY KEY,
   title TEXT NOT NULL,
+  alternate_titles TEXT[],
   synopsis TEXT,
   year INT,
   popularity INT,
+  rating TEXT,
   score FLOAT,
-  studio_id INT REFERENCES studios(studio_id)
+  studio_id INT REFERENCES studios(studio_id),
 );
 
 CREATE TABLE genres (
@@ -30,10 +32,10 @@ CREATE TABLE users (
   country TEXT
 );
 
-CREATE TABLE user_ratings (
+CREATE TABLE user_scores (
   user_id INT REFERENCES users(user_id),
   anime_id INT REFERENCES anime(anime_id),
-  rating FLOAT,
+  score FLOAT,
   timestamp TIMESTAMP,
   PRIMARY KEY (user_id, anime_id)
 );
