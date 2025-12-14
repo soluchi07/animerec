@@ -44,11 +44,11 @@ This design decision impacts downstream models:
 - Upgraded CSV visualization workflow (VSCode extension better than Rainbow CSV)
 
 ## Deliverables
-[X] Full MAL anime catalog ingested  
-[X] Clean, normalized CSVs ready for database loading  
-[X] Implicit interaction signals created  
-[X] EDA initiated with initial insights  
-[X] Clear justification for content-based recommender strategy  
+- [x] Full MAL anime catalog ingested  
+- [x] Clean, normalized CSVs ready for database loading  
+- [x] Implicit interaction signals created  
+- [x] EDA initiated with initial insights  
+- [x] Clear justification for content-based recommender strategy  
 
 ## Next Steps (Week 2)
 - Design Postgres schema around processed data
