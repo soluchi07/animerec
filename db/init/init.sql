@@ -13,7 +13,6 @@ CREATE TABLE anime (
   popularity INT,
   members INT,
   favorites INT,
-  studio_id INT REFERENCES studios(studio_id),
 );
 
 -- Genres
@@ -75,5 +74,6 @@ CREATE INDEX idx_implicit_anime ON implicit_interactions(anime_id);
 
 COPY anime FROM '/docker-entrypoint-initdb.d/anime.csv' CSV HEADER;
 COPY studios FROM '/docker-entrypoint-initdb.d/studios.csv' CSV HEADER;
+COPY genres FROM '/docker-entrypoint-initdb.d/genres.csv' CSV HEADER;
 COPY anime_genres FROM '/docker-entrypoint-initdb.d/anime_genres.csv' CSV HEADER;
-COPY genre FROM '/docker-entrypoint-initdb.d/genres.csv' CSV HEADER;
+COPY anime_studios FROM '/docker-entrypoint-initdb.d/anime_studios.csv' CSV HEADER;

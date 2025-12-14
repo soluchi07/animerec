@@ -9,6 +9,7 @@ with open(RAW_FILE, encoding="utf-8") as f:
 
 anime_rows = []
 anime_genre_rows = []
+anime_studio_rows = []
 studio_rows = {}
 genre_lookup = {}
 
@@ -27,7 +28,6 @@ for a in raw:
         "score": a["score"],
         "rank": a["rank"],
         "popularity": a["popularity"],
-        "studio_id": a["studios"][0]["mal_id"] if a["studios"] else "",
         "members": a["members"],
         "favorites": a["favorites"]
     })
@@ -43,12 +43,22 @@ for a in raw:
             "anime_id": anime_id, 
             "genre_id": genre_id,
         })
-    
+        
     for s in a["studios"]:
-        studio_rows[s["mal_id"]] = s["name"]
+        studio_id = s["mal_id"]
+        studio_name = s["name"]
+
+        if studio_id not in studio_rows:
+            studio_rows[studio_id] = studio_name
+
+        anime_studio_rows.append({
+            "anime_id": anime_id, 
+            "studio_id": studio_id,
+        })
 
 anime_df = pd.DataFrame(anime_rows)
 anime_genres_df = pd.DataFrame(anime_genre_rows)
+anime_studios_df = pd.DataFrame(anime_studio_rows)
 
 studios_df = pd.DataFrame([
     {"studio_id": k, "name": v} for k, v in studio_rows.items()
@@ -60,5 +70,8 @@ genres_df = pd.DataFrame([
 
 anime_df.to_csv(f"{OUT_DIR}anime.csv", index=False)
 anime_genres_df.to_csv(f"{OUT_DIR}anime_genres.csv", index=False)
+anime_studios_df.to_csv(f"{OUT_DIR}anime_studios.csv", index=False)
 studios_df.to_csv(f"{OUT_DIR}studios.csv", index=False)
 genres_df.to_csv(f"{OUT_DIR}genres.csv", index=False)
+
+print("...CSV files generated...")
