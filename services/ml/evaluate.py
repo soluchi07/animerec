@@ -1,22 +1,37 @@
+
 import pandas as pd
 import numpy as np
 from sqlalchemy import create_engine, text
 from sklearn.model_selection import KFold
 from typing import List, Dict
 
-# Import your existing model artifacts
-from . import als_model, content_model
-from .hybrid_model import HybridRecommender # Use the full Hybrid class
+import joblib
+import os
 
-# Database setup (assuming your engine connection is consistent)
-DATABASE_URL = "postgresql://user:password@db:5432/animedb" # Adjust as needed
-engine = create_engine(DATABASE_URL)
+from .db import engine
 
-# --- GLOBAL MODEL ARTIFACTS ---
-# Initialize models once to save time
-CF_ARTIFACTS = als_model.build_cf_model()
-CB_ARTIFACTS = content_model.build_content_model()
-HYBRID_MODEL = HybridRecommender()
+# Define the artifact paths consistently
+ARTIFACTS_PATH = "/app/services/ml/artifacts/"
+CF_ARTIFACTS_PATH = os.path.join(ARTIFACTS_PATH, "als_model_artifacts.joblib")
+CB_ARTIFACTS_PATH = os.path.join(ARTIFACTS_PATH, "content_model_artifacts.joblib")
+HYBRID_ENGINE_PATH = os.path.join(ARTIFACTS_PATH, "hybrid_recommender_engine.joblib")
+
+try:
+    print("Loading models from artifacts...")
+    # 1. Load Collaborative Filtering Artifacts
+    CF_ARTIFACTS = joblib.load(CF_ARTIFACTS_PATH)
+
+    # 2. Load Content-Based Artifacts
+    CB_ARTIFACTS = joblib.load(CB_ARTIFACTS_PATH)
+
+    # 3. Load the initialized Hybrid Engine (this is the fastest path)
+    HYBRID_MODEL = joblib.load(HYBRID_ENGINE_PATH)
+
+except FileNotFoundError as e:
+    print(f"Error: Model artifact not found at {e.filename}. You must run 'content_model.py', 'als_model.py', and 'hybrid_model.py' first.")
+    # Exit or provide a fallback mechanism if artifacts are missing
+    raise SystemExit(1) from e
+
 ANIME_DF = CB_ARTIFACTS['anime_df']
 
 def get_user_ratings():
