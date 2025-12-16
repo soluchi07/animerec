@@ -52,7 +52,8 @@ services:
       DATABASE_URL: postgresql://anime_user:anime_pass@postgres:5432/anime_db
     volumes:
       - .:/app                         
-      - ./data/processed:/app/data/processed 
+      - ./data/processed:/app/data/processed
+      - ./services/ml/artifacts:/app/services/ml/artifacts
     command: ["tail", "-f", "/dev/null"]
 
 volumes:

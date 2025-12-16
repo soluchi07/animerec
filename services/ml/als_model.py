@@ -2,10 +2,16 @@
 import pandas as pd
 import numpy as np
 
+import os
+import joblib
+
 from scipy.sparse import csr_matrix
 from implicit.als import AlternatingLeastSquares
 
 from .db import engine
+
+ARTIFACTS_PATH = "/app/services/ml/artifacts/" 
+MODEL_FILENAME = "als_model_artifacts.joblib"
 
 def load_ratings():
     query = """
@@ -77,7 +83,18 @@ def build_cf_model():
         "user_map": user_map,
         "anime_map": anime_map,
     }
+    
+def save_model(model_artifacts, path):
+    try:
+        joblib.dump(model_artifacts, path)
+        print(f"Successfully saved ALS model artifacts to {path}")
+    except Exception as e:
+        print(f"Error saving model artifacts: {e}")
 
 if __name__ == "__main__":
+    os.makedirs(ARTIFACTS_PATH, exist_ok=True)
     artifacts = build_cf_model()
     print("ALS model trained")
+    
+    full_path = os.path.join(ARTIFACTS_PATH, MODEL_FILENAME)
+    save_model(artifacts, full_path)

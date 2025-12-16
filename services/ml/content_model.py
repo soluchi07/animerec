@@ -1,10 +1,16 @@
 import pandas as pd
 import numpy as np
 
+import joblib
+import os
+
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
 
 from .db import engine
+
+ARTIFACTS_PATH = "/app/services/ml/artifacts/" 
+MODEL_FILENAME = "content_model_artifacts.joblib"
 
 def load_anime():
     query = """
@@ -53,7 +59,24 @@ def build_content_model():
         "tfidf": tfidf,
         "neighbors": neighbors,
     }
+
+
+def save_model(model_artifacts, path):
+    """Saves the entire content model dictionary to a file using joblib."""
+    try:
+        # joblib.dump is optimized for large numpy arrays and sklearn objects
+        joblib.dump(model_artifacts, path)
+        print(f"Successfully saved content model artifacts to {path}")
+    except Exception as e:
+        print(f"Error saving model artifacts: {e}")
+        # Optionally, check if the directory exists and try to create it here
+        # E.g., os.makedirs(os.path.dirname(path), exist_ok=True)
     
 if __name__ == "__main__":
+    os.makedirs(ARTIFACTS_PATH, exist_ok=True)
+    
     model = build_content_model()
     print(f"Built content model for {len(model['anime_df'])} anime")
+    
+    full_path = os.path.join(ARTIFACTS_PATH, MODEL_FILENAME)
+    save_model(model, full_path)

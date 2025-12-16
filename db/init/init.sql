@@ -27,11 +27,10 @@ CREATE TABLE studios (
 );
 
 CREATE TABLE users (
-  user_id SERIAL PRIMARY KEY,
+  user_id INT PRIMARY KEY,
   user_type TEXT CHECK (user_type IN ('synthetic', 'implicit')),
   description TEXT
 );
-
 
 
 CREATE TABLE anime_genres (

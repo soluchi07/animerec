@@ -7,6 +7,11 @@ from sqlalchemy import text
 from . import als_model, content_model
 from .db import engine
 
+import joblib
+import os
+
+ARTIFACTS_PATH = "/app/services/ml/artifacts/" 
+MODEL_FILENAME = "hybrid_recommender_engine.joblib"
 class HybridRecommender:
     def __init__(self):
         print("Loading Hybrid Recommender Components...")
@@ -209,6 +214,24 @@ class HybridRecommender:
         scored_candidates.sort(key=lambda x: x['final_score'], reverse=True)
         
         return scored_candidates[:limit]
+    
 
-# Singleton instance for the API to import
+def save_hybrid_engine(engine_instance, path):
+    """Saves the initialized HybridRecommender instance."""
+    try:
+        joblib.dump(engine_instance, path)
+        print(f"Successfully saved Hybrid Recommender Engine to {path}")
+    except Exception as e:
+        print(f"Error saving hybrid engine: {e}")
+
+# Note: The singleton instance below is what the API would typically load.
+# We are saving this instance.
 recommender_engine = HybridRecommender()
+
+if __name__ == "__main__":
+    # If this script is run directly, it will build the engine (above) and save it.
+    os.makedirs(ARTIFACTS_PATH, exist_ok=True)
+    
+    # Save the initialized instance
+    full_path = os.path.join(ARTIFACTS_PATH, MODEL_FILENAME)
+    save_hybrid_engine(recommender_engine, full_path)

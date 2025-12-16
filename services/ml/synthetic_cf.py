@@ -3,6 +3,8 @@ import pandas as pd
 
 from .db import engine
 
+from sqlalchemy import create_engine
+
 def load_anime():
     query = """
         SELECT
@@ -60,15 +62,22 @@ if __name__ == "__main__":
     all_genres = sorted({g for genres in anime["genres"] for g in genres})
     
     ratings_df = generate_synthetic_user_ratings(anime, all_genres)
+    num_users = len(ratings_df)
     
-    ratings_df.to_sql(
-        "user_ratings",
-        engine,
-        if_exists="append",
-        index=False,
-        method="multi"
-    )
+    print(f"Populating {num_users} synthetic users...")
+    
+    # Generate the users DataFrame
+    user_ids = ratings_df['user_id'].unique()
+    users_df = pd.DataFrame({
+        'user_id': user_ids,
+        'user_type': 'synthetic',
+        'description': 'Generated for CF training'
+    })
+    
+    users_df.to_sql('users', engine, if_exists='append', index=False)
 
-    print(f"Inserted {len(ratings_df)} synthetic ratings")
-    print(ratings_df.head())
-
+    print(f"Inserting {num_users} synthetic user ratings...")
+    ratings_df.to_sql('user_ratings', engine, if_exists='append', index=False)
+    print("Synthetic data generation complete.")
+    
+    # method="multi"
