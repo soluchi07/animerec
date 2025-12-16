@@ -46,6 +46,7 @@ services:
       context: ./services/ml     
       dockerfile: Dockerfile
     container_name: anime_ml
+    command: ["/app/run_ml_setup.sh"]
     depends_on:
       - postgres
     environment:
@@ -54,7 +55,5 @@ services:
       - .:/app                         
       - ./data/processed:/app/data/processed
       - ./services/ml/artifacts:/app/services/ml/artifacts
-    command: ["tail", "-f", "/dev/null"]
-
 volumes:
   pgdata:
