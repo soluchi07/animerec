@@ -9,6 +9,7 @@ import joblib
 import os
 
 from .db import engine
+from . import hybrid_model
 
 # Define the artifact paths consistently
 ARTIFACTS_PATH = "/app/services/ml/artifacts/"
