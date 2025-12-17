@@ -1,4 +1,3 @@
-
 import pandas as pd
 import numpy as np
 from sqlalchemy import create_engine, text
@@ -7,6 +6,7 @@ from typing import List, Dict
 
 import joblib
 import os
+import sys
 
 from .db import engine
 from . import hybrid_model
@@ -16,6 +16,24 @@ ARTIFACTS_PATH = "/app/services/ml/artifacts/"
 CF_ARTIFACTS_PATH = os.path.join(ARTIFACTS_PATH, "als_model_artifacts.joblib")
 CB_ARTIFACTS_PATH = os.path.join(ARTIFACTS_PATH, "content_model_artifacts.joblib")
 HYBRID_ENGINE_PATH = os.path.join(ARTIFACTS_PATH, "hybrid_recommender_engine.joblib")
+
+try:
+    # 1. Get the actual class definition from the imported module
+    HybridRecommenderClass = hybrid_model.HybridRecommender
+    
+    # 2. **Explicitly assign the class to the *loaded module's* namespace**
+    # This ensures that when joblib/pickle attempts to load 
+    # 'services.ml.hybrid_model.HybridRecommender', the class is definitely found.
+    setattr(hybrid_model, 'HybridRecommender', HybridRecommenderClass)
+    
+    # 3. Also, ensure the class is available directly in the current module's namespace
+    # (This is safer than directly modifying sys.modules entry)
+    globals()['HybridRecommender'] = HybridRecommenderClass
+
+    print("Class path successfully patched for unpickling.")
+
+except Exception as e:
+    print(f"Warning: Failed to patch class path. Error: {e}")
 
 try:
     print("Loading models from artifacts...")

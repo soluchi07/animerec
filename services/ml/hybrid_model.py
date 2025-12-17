@@ -3,39 +3,51 @@ import pandas as pd
 from sklearn.preprocessing import MinMaxScaler
 from sqlalchemy import text
 
-# Import existing modules based on provided context
-from . import als_model, content_model
 from .db import engine
 
 import joblib
 import os
 
+
 ARTIFACTS_PATH = "/app/services/ml/artifacts/" 
 MODEL_FILENAME = "hybrid_recommender_engine.joblib"
+
+CF_ARTIFACTS_PATH = os.path.join(ARTIFACTS_PATH, "als_model_artifacts.joblib")
+CB_ARTIFACTS_PATH = os.path.join(ARTIFACTS_PATH, "content_model_artifacts.joblib")
+
 class HybridRecommender:
     def __init__(self):
         print("Loading Hybrid Recommender Components...")
-        
-        # 1. Load Collaborative Filtering Model (ALS)
-        # Returns: {'model', 'interaction_matrix', 'user_map', 'anime_map'}
-        self.cf_artifacts = als_model.build_cf_model()
+
+        # 1. LOAD Collaborative Filtering Artifacts (DO NOT CALL build_cf_model)
+        # Assuming the function build_cf_model() is now replaced by loading the joblib file
+        try:
+            self.cf_artifacts = joblib.load(CF_ARTIFACTS_PATH)
+        except FileNotFoundError as e:
+            raise FileNotFoundError(
+                "CF Artifacts not found. Run als_model.py first."
+            ) from e
+
         self.cf_model = self.cf_artifacts['model']
         self.user_map = self.cf_artifacts['user_map']
         self.item_map = self.cf_artifacts['anime_map']
-        # Reverse map for ID lookup
         self.id_to_idx_cf = {v: k for k, v in self.item_map.items()}
 
-        # 2. Load Content-Based Model (TF-IDF)
-        # Returns: {'anime_df', 'tfidf', 'neighbors'}
-        self.cb_artifacts = content_model.build_content_model()
+        # 2. LOAD Content-Based Artifacts (DO NOT CALL build_content_model)
+        try:
+            self.cb_artifacts = joblib.load(CB_ARTIFACTS_PATH)
+        except FileNotFoundError as e:
+            raise FileNotFoundError(
+                "CB Artifacts not found. Run content_model.py first."
+            ) from e
+
         self.anime_df = self.cb_artifacts['anime_df']
         self.tfidf = self.cb_artifacts['tfidf']
-        
+
         # 3. Rebuild TF-IDF Matrix for on-the-fly scoring
-        # (The original build_content_model doesn't return the matrix 'X', so we transform it here)
         print("Recomputing TF-IDF matrix for hybrid scoring...")
         self.tfidf_matrix = self.tfidf.transform(self.anime_df['synopsis'].fillna(""))
-        
+
         # Map anime_id to matrix row index
         self.anime_id_to_matrix_idx = {
             row.anime_id: idx 

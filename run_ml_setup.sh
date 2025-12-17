@@ -19,20 +19,20 @@ echo "Starting Synthetic Data Generation..."
 # Generate synthetic users and ratings
 python -m services.ml.synthetic_cf
 
-# echo "Data preparation complete. Starting model training..."
+echo "Data preparation complete. Starting model training..."
 
 # --- 3. Run Model Training Scripts ---
 
 # Train Content-Based Model and save artifacts
-# python -m services.ml.content_model
+python -m services.ml.content_model
 
 # Train Collaborative Filtering Model and save artifacts
-# python -m services.ml.als_model
+python -m services.ml.als_model
 
 # Build Hybrid Model (which loads and combines the above) and save artifact
-# python -m services.ml.hybrid_model
+python -m services.ml.hybrid_model
 
-# echo "All ML models trained and artifacts saved."
+echo "All ML models trained and artifacts saved."
 
 # --- 4. Keep container running (Crucial for a service) ---
 # This ensures the container stays alive after the setup finishes
