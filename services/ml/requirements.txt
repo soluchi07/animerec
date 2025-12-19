@@ -12,3 +12,5 @@ implicit>=0.7.0          # Highly optimized library for implicit feedback datase
 redis>=5.0.0             # For interacting with the Redis service
 
 tqdm>=4.66.1             # Progress bars for long-running ETL/ML processes
+
+tabulate

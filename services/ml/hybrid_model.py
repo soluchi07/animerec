@@ -1,6 +1,7 @@
 import numpy as np
 import pandas as pd
 from sklearn.preprocessing import MinMaxScaler
+from scipy.sparse import csr_matrix
 from sqlalchemy import text
 
 from .db import engine
@@ -84,8 +85,11 @@ class HybridRecommender:
             FROM user_ratings 
             WHERE user_id = :user_id AND rating >= :threshold
         """)
+        # Ensure parameters are native Python types (avoid numpy types)
+        uid = int(user_id)
+        thr = float(threshold)
         with engine.connect() as conn:
-            result = conn.execute(query, {"user_id": user_id, "threshold": threshold})
+            result = conn.execute(query, {"user_id": uid, "threshold": thr})
             return [row[0] for row in result]
 
     def _calculate_content_scores(self, user_id, candidate_ids):
@@ -163,8 +167,18 @@ class HybridRecommender:
         # 1. Generate Candidates (CF + Popular fallback)
         if user_id in self.user_map:
             user_idx = self.user_map[user_id]
-            ids, _ = self.cf_model.recommend(user_idx, self.cf_artifacts['interaction_matrix'], N=50)
-            candidates = [self.id_to_idx_cf[i] for i in ids]
+            # Compute top-N candidates from factor dot-product to avoid passing
+            # a full user_items matrix to implicit.recommend (which expects
+            # a CSR shaped to the number of requested users).
+            try:
+                user_factors = self.cf_model.user_factors[user_idx]
+                item_factors = self.cf_model.item_factors
+                scores = item_factors @ user_factors
+                top_idxs = np.argsort(-scores)[:50]
+                candidates = [self.id_to_idx_cf[int(i)] for i in top_idxs]
+            except Exception:
+                # Fallback: use popular items
+                candidates = self.anime_df.sort_values('popularity').head(50)['anime_id'].tolist()
         else:
             # Cold start: Use generic popular items
             candidates = self.anime_df.sort_values('popularity').head(50)['anime_id'].tolist()
@@ -189,10 +203,13 @@ class HybridRecommender:
         scored_candidates = []
         
         for aid in candidates:
-            # Fetch Metadata
-            meta = self.anime_df[self.anime_df['anime_id'] == aid].iloc[0]
-            rank = meta['rank']
-            popularity = meta['popularity']
+            # Fetch Metadata; skip candidate if metadata not available
+            meta_df = self.anime_df[self.anime_df['anime_id'] == aid]
+            if meta_df.empty:
+                continue
+            meta = meta_df.iloc[0]
+            rank = meta.get('rank', None) if hasattr(meta, 'get') else meta['rank']
+            popularity = meta.get('popularity', None) if hasattr(meta, 'get') else meta['popularity']
 
             # Get normalized component scores
             s_content = cb_norm.get(aid, 0.0)
@@ -224,7 +241,36 @@ class HybridRecommender:
 
         # Sort descending by final score
         scored_candidates.sort(key=lambda x: x['final_score'], reverse=True)
-        
+
+        # If we have fewer than `limit` candidates (due to missing metadata),
+        # pad with top popular items from the content DB that are not already included.
+        if len(scored_candidates) < limit:
+            existing = {c['anime_id'] for c in scored_candidates}
+            popular_candidates = (
+                self.anime_df.sort_values('popularity', ascending=False)['anime_id']
+                .tolist()
+            )
+            for aid in popular_candidates:
+                if len(scored_candidates) >= limit:
+                    break
+                if aid in existing:
+                    continue
+                meta_df = self.anime_df[self.anime_df['anime_id'] == aid]
+                if meta_df.empty:
+                    continue
+                meta = meta_df.iloc[0]
+                scored_candidates.append({
+                    'anime_id': int(aid),
+                    'title': meta['title'],
+                    'final_score': 0.0,
+                    'metrics': {
+                        'content': 0.0,
+                        'collaborative': 0.0,
+                        'quality_rank': self.quality_score(meta.get('rank', None)),
+                        'exposure_penalty': self.exposure_penalty(meta.get('popularity', None))
+                    }
+                })
+
         return scored_candidates[:limit]
     
 

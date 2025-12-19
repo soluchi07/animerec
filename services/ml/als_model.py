@@ -50,8 +50,9 @@ def train_als(interaction_matrix):
         random_state=42
     )
 
-    # implicit expects item-user matrix
-    model.fit(interaction_matrix.T)
+    # implicit expects item-user matrix (items x users)
+    # convert to CSR to ensure correct sparse format and fit
+    model.fit(csr_matrix(interaction_matrix.T))
 
     return model
 
@@ -60,7 +61,7 @@ def recommend_for_user(model, interaction_matrix, user_map, anime_map, user_id, 
 
     scores, item_idxs = model.recommend(
         user_idx,
-        interaction_matrix,
+        csr_matrix(interaction_matrix),
         N=k
     )
 
